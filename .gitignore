@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+
+# OS / IDE
+.DS_Store
+.vscode/
+.idea/
+
+# Large local Vector DB files (re-generated via python search_engine.py)
+chroma_db/

@@ -1,0 +1,37 @@
+{
+  "total_queries": 40,
+  "hit_at_1": 50.0,
+  "hit_at_3": 65.0,
+  "hit_at_5": 65.0,
+  "mrr": 0.5708,
+  "category_stats": {
+    "semantic_zero_overlap": {
+      "total": 10,
+      "hit1": 0,
+      "hit3": 3,
+      "hit5": 3,
+      "mrr": 1.3333333333333333
+    },
+    "semantic": {
+      "total": 6,
+      "hit1": 2,
+      "hit3": 2,
+      "hit5": 2,
+      "mrr": 2.0
+    },
+    "attributed": {
+      "total": 12,
+      "hit1": 10,
+      "hit3": 10,
+      "hit5": 10,
+      "mrr": 10.0
+    },
+    "temporal": {
+      "total": 12,
+      "hit1": 8,
+      "hit3": 11,
+      "hit5": 11,
+      "mrr": 9.5
+    }
+  }
+}
