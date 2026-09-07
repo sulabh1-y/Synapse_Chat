@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapse_Chat - Smart Group Chat Search</title>
+    <style>
+        :root {
+            --bg: #0b0f19;
+            --card-bg: #1e293b;
+            --card-hover: #24334a;
+            --primary: #38bdf8;
+            --primary-glow: rgba(56, 189, 248, 0.25);
+            --primary-hover: #0284c7;
+            --accent-purple: #c084fc;
+            --accent-green: #34d399;
+            --accent-pink: #f472b6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --mark-bg: #fef08a;
+            --mark-text: #713f12;
+            --ai-bg: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            --ai-border: #38bdf8;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 30px 20px;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 900px; margin: 0 auto; }
+
+        header { margin-bottom: 25px; text-align: center; }
+
+        .brand-title {
+            font-size: 2.5rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0 0 6px 0;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            margin: 0;
+            font-weight: 500;
+        }
+
+        /* Search & Control Card */
+        .search-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            margin-bottom: 25px;
+        }
+
+        .search-input-group {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        input[type="text"], select, input[type="date"] {
+            padding: 12px 16px;
+            font-size: 15px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            outline: none;
+            background-color: #0f172a;
+            color: var(--text-main);
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus, select:focus, input[type="date"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+
+        .main-query-input { flex: 1; font-size: 16px !important; }
+
+        button {
+            padding: 12px 24px;
+            font-size: 15px;
+            background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+        }
+
+        /* Preset Query Buttons */
+        .presets-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .preset-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .preset-btn {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: var(--primary);
+            padding: 5px 12px;
+            font-size: 0.82rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .preset-btn:hover {
+            background: #1e293b;
+            border-color: var(--primary);
+            box-shadow: 0 0 10px var(--primary-glow);
+        }
+
+        /* Filter Section Grid */
+        .filter-section-title {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+
+        .filter-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .filter-group { display: flex; flex-direction: column; gap: 6px; }
+        .filter-group label { font-size: 0.82rem; font-weight: 600; color: var(--text-muted); }
+
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            border-top: 1px solid var(--border);
+            padding-top: 16px;
+        }
+
+        .mode-selector { display: flex; gap: 16px; }
+        .mode-selector label { cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 0.9rem; }
+
+        /* AI Executive Summary Box */
+        .ai-summary-box {
+            background: var(--ai-bg);
+            border: 1px solid var(--ai-border);
+            border-radius: 14px;
+            padding: 18px 22px;
+            margin-bottom: 22px;
+            box-shadow: 0 4px 20px rgba(56, 189, 248, 0.15);
+        }
+
+        .ai-summary-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            color: var(--primary);
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .ai-summary-body {
+            font-size: 0.94rem;
+            color: #e0f2fe;
+            line-height: 1.6;
+        }
+
+        .ai-topics-pills {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        }
+
+        .topic-pill {
+            background: rgba(56, 189, 248, 0.15);
+            color: #7dd3fc;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        /* Result Cards */
+        .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .results-count { font-weight: 800; color: var(--text-main); font-size: 1.05rem; }
+
+        .result-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        .result-card:hover {
+            border-color: #475569;
+            transform: translateY(-1px);
+        }
+
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        
+        .sender-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 0.98rem;
+        }
+
+        .avatar-badge {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.78rem;
+            font-weight: 900;
+            color: #ffffff;
+            background: var(--primary);
+        }
+
+        .timestamp { color: var(--text-muted); font-size: 0.8rem; margin-left: 6px; font-weight: normal; }
+
+        .badge-score {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            font-weight: 800;
+            font-size: 0.84rem;
+            padding: 5px 14px;
+            border-radius: 20px;
+            border: 1px solid rgba(56, 189, 248, 0.3);
+        }
+
+        .badge-keyword {
+            background: rgba(52, 211, 153, 0.15);
+            color: #34d399;
+            border-color: rgba(52, 211, 153, 0.3);
+        }
+
+        .msg-text {
+            font-size: 1.02rem;
+            line-height: 1.6;
+            color: #f1f5f9;
+            margin-top: 6px;
+        }
+
+        /* Neon Mark Highlighting */
+        mark {
+            background-color: var(--mark-bg);
+            color: var(--mark-text);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 700;
+            box-shadow: 0 0 8px rgba(254, 240, 138, 0.4);
+        }
+
+        .kw-tag { background: #0f172a; color: #94a3b8; padding: 3px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: 600; border: 1px solid var(--border); }
+        .keywords-tag-list { display: flex; gap: 6px; align-items: center; font-size: 0.78rem; color: var(--text-muted); }
+
+        .action-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            padding-top: 12px;
+            border-top: 1px solid #2d3d54;
+        }
+
+        .related-btn {
+            background: #0f172a;
+            border: 1px solid var(--border);
+            color: var(--primary);
+            padding: 6px 14px;
+            font-size: 0.8rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.2s;
+        }
+
+        .related-btn:hover {
+            background: #1e293b;
+            border-color: var(--primary);
+        }
+
+        .related-container {
+            margin-top: 12px;
+            padding: 12px 16px;
+            background: #0f172a;
+            border-left: 3px solid var(--primary);
+            border-radius: 6px;
+            font-size: 0.88rem;
+            display: none;
+        }
+
+        .empty-state { text-align: center; padding: 50px 20px; color: var(--text-muted); font-size: 1.05rem; }
+        .reset-btn { background: none; border: 1px solid var(--border); color: var(--text-muted); padding: 6px 14px; font-size: 13px; border-radius: 8px; cursor: pointer; }
+        .reset-btn:hover { background: #1e293b; color: var(--text-main); }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand-title">💬 Synapse_Chat</div>
+            <p class="subtitle">Smart Group Chat Search Engine powered by Sentence-Transformers & AI Digest</p>
+        </header>
+
+        <div class="search-card">
+            <!-- Search Query Input -->
+            <div class="search-input-group">
+                <input type="text" id="searchInput" class="main-query-input" placeholder="Type a free-form query (e.g. Saket restaurant dinner, sneakers discount)..." onkeydown="if(event.key==='Enter') executeSearch()">
+                <button onclick="executeSearch()">Search</button>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="presets-row">
+                <span class="preset-label">Quick Presets:</span>
+                <button class="preset-btn" onclick="applyPreset('Saket restaurant dinner table')">🎯 Food & Dinner</button>
+                <button class="preset-btn" onclick="applyPreset('Special discount offer sneakers SNEAK50')">👟 Sneaker Offer</button>
+                <button class="preset-btn" onclick="applyPreset('Sector 43 Gurgaon 3BHK flat rent')">🏠 3BHK Flat Rent</button>
+                <button class="preset-btn" onclick="applyPreset('Surprise birthday party Priya Saket')">🎂 Birthday Party</button>
+            </div>
+
+            <!-- Metadata Filters Grid -->
+            <div class="filter-section-title">Filter Search Results</div>
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label for="senderSelect">Filter by Username</label>
+                    <select id="senderSelect" onchange="executeSearch()">
+                        <option value="all">All Members</option>
+                        {% for sender in senders %}
+                        <option value="{{ sender }}">{{ sender }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="startDate">From Date</label>
+                    <input type="date" id="startDate" onchange="executeSearch()">
+                </div>
+
+                <div class="filter-group">
+                    <label for="endDate">To Date</label>
+                    <input type="date" id="endDate" onchange="executeSearch()">
+                </div>
+
+                <div class="filter-group">
+                    <label for="keywordFilterInput">Must Contain Keyword</label>
+                    <input type="text" id="keywordFilterInput" placeholder="e.g. Saket" onkeydown="if(event.key==='Enter') executeSearch()">
+                </div>
+            </div>
+
+            <!-- Bottom Control Row -->
+            <div class="controls-row">
+                <div class="mode-selector">
+                    <label><input type="radio" name="searchMode" value="semantic" checked onclick="executeSearch()"> 🧠 Semantic</label>
+                    <label><input type="radio" name="searchMode" value="keyword" onclick="executeSearch()"> 🔤 Keyword</label>
+                    <label><input type="radio" name="searchMode" value="hybrid" onclick="executeSearch()"> ⚡ Hybrid</label>
+                </div>
+
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button type="button" class="reset-btn" onclick="resetFilters()">Reset Filters</button>
+                    <label style="color: var(--text-muted); font-size: 13px;">Results: 
+                        <select id="topKSelect" onchange="executeSearch()">
+                            <option value="3">3</option>
+                            <option value="5" selected>5</option>
+                            <option value="10">10</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div id="aiSummaryContainer"></div>
+        <div id="resultsContainer"></div>
+    </div>
+
+    <script>
+        function applyPreset(queryText) {
+            document.getElementById('searchInput').value = queryText;
+            executeSearch();
+        }
+
+        async function executeSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const sender = document.getElementById('senderSelect').value;
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const keywordFilter = document.getElementById('keywordFilterInput').value.trim();
+            const mode = document.querySelector('input[name="searchMode"]:checked').value;
+            const topK = document.getElementById('topKSelect').value;
+
+            const container = document.getElementById('resultsContainer');
+            const summaryContainer = document.getElementById('aiSummaryContainer');
+
+            container.innerHTML = '<div class="empty-state">Searching & applying filters...</div>';
+            summaryContainer.innerHTML = '';
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, sender, start_date: startDate, end_date: endDate, keyword_filter: keywordFilter, mode, top_k: parseInt(topK) })
+                });
+
+                const data = await response.json();
+
+                if (data.status !== 'success' || !data.results || data.results.length === 0) {
+                    container.innerHTML = `<div class="empty-state">No chat messages found matching your search & filter criteria.</div>`;
+                    return;
+                }
+
+                // AI Executive Summary Digest Box
+                if (data.ai_digest && data.ai_digest.summary) {
+                    const topicsHtml = (data.ai_digest.main_topics || []).map(t => `<span class="topic-pill">${t}</span>`).join('');
+                    summaryContainer.innerHTML = `
+                    <div class="ai-summary-box">
+                        <div class="ai-summary-header">
+                            <span>🤖 AI Executive Summary Digest</span>
+                        </div>
+                        <div class="ai-summary-body">${escapeHtml(data.ai_digest.summary)}</div>
+                        <div class="ai-topics-pills">${topicsHtml}</div>
+                    </div>`;
+                }
+
+                let html = `<div class="results-header">
+                    <div class="results-count">Found ${data.results.length} result(s) [Mode: ${data.mode.toUpperCase()}]</div>
+                </div>`;
+
+                const allHighlightKeywords = [...(data.query_keywords || [])];
+                if (data.filters.keyword_filter) allHighlightKeywords.push(data.filters.keyword_filter);
+
+                data.results.forEach((item, index) => {
+                    const msg = item.message;
+                    const scoreDisplay = item.similarity_percentage ? `Similarity: ${item.similarity_percentage}` : `Keyword Score: ${item.score}`;
+                    const badgeClass = item.search_type === 'keyword' ? 'badge-score badge-keyword' : 'badge-score';
+                    
+                    const combinedMatchList = Array.from(new Set([...(item.matched_keywords || []), ...allHighlightKeywords]));
+                    const highlightedText = highlightKeywords(msg.text, combinedMatchList);
+
+                    const initial = (msg.sender || 'U')[0].toUpperCase();
+                    const autoTagsHtml = (item.auto_tags || []).map(t => `<span class="topic-pill">${t}</span>`).join(' ');
+
+                    html += `
+                    <div class="result-card">
+                        <div class="result-header">
+                            <div class="sender-info">
+                                <span class="avatar-badge">${initial}</span>
+                                <span>${escapeHtml(msg.sender)}</span>
+                                <span class="timestamp">${escapeHtml(msg.timestamp || '')}</span>
+                                ${autoTagsHtml}
+                            </div>
+                            <span class="${badgeClass}">${scoreDisplay}</span>
+                        </div>
+                        <div class="msg-text">${highlightedText}</div>
+                        
+                        <div class="action-row">
+                            <div class="keywords-tag-list">
+                                ${(item.matched_keywords && item.matched_keywords.length > 0) 
+                                    ? '<span>Matched:</span>' + item.matched_keywords.map(kw => `<span class="kw-tag">${escapeHtml(kw)}</span>`).join('') 
+                                    : ''}
+                            </div>
+                            <button type="button" class="related-btn" onclick="fetchRelatedMessages(${msg.message_id}, ${index})">🔗 More Like This</button>
+                        </div>
+                        <div id="related-${index}" class="related-container"></div>
+                    </div>`;
+                });
+
+                container.innerHTML = html;
+            } catch (err) {
+                console.error(err);
+                container.innerHTML = '<div class="empty-state" style="color:#ef4444;">Failed to execute search.</div>';
+            }
+        }
+
+        async function fetchRelatedMessages(msgId, idx) {
+            const relBox = document.getElementById(`related-${idx}`);
+            if (relBox.style.display === 'block') {
+                relBox.style.display = 'none';
+                return;
+            }
+
+            relBox.style.display = 'block';
+            relBox.innerHTML = '<em>Finding semantically related messages...</em>';
+
+            try {
+                const res = await fetch(`/api/related/${msgId}?top_k=3`);
+                const data = await res.json();
+
+                if (!data.related_messages || data.related_messages.length === 0) {
+                    relBox.innerHTML = '<em>No related messages found.</em>';
+                    return;
+                }
+
+                let relHtml = '<strong>💡 Semantically Related Messages:</strong><ul style="margin:8px 0 0 0; padding-left:20px;">';
+                data.related_messages.forEach(r => {
+                    relHtml += `<li style="margin-bottom:6px; color:#e0f2fe;">
+                        <strong>${escapeHtml(r.message.sender)}</strong> (${r.similarity_percentage}): 
+                        "${escapeHtml(r.message.text)}"
+                    </li>`;
+                });
+                relHtml += '</ul>';
+                relBox.innerHTML = relHtml;
+            } catch (e) {
+                relBox.innerHTML = '<em style="color:#ef4444;">Failed to load related messages.</em>';
+            }
+        }
+
+        function resetFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('senderSelect').value = 'all';
+            document.getElementById('startDate').value = '';
+            document.getElementById('endDate').value = '';
+            document.getElementById('keywordFilterInput').value = '';
+            document.getElementById('topKSelect').value = '5';
+            executeSearch();
+        }
+
+        function highlightKeywords(text, keywords) {
+            if (!text) return '';
+            let safeText = escapeHtml(text);
+            if (!keywords || keywords.length === 0) return safeText;
+
+            const sortedKw = [...keywords].filter(k => k && k.length >= 2).sort((a, b) => b.length - a.length);
+            sortedKw.forEach(kw => {
+                const regex = new RegExp(`\\b(${escapeRegex(kw)})\\b`, 'gi');
+                safeText = safeText.replace(regex, '<mark>$1</mark>');
+            });
+
+            return safeText;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        function escapeRegex(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        window.onload = function() {
+            document.getElementById('searchInput').value = 'Saket restaurant dinner';
+            executeSearch();
+        };
+    </script>
+</body>
+</html>
