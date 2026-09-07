@@ -5,34 +5,46 @@ from datetime import datetime
 from typing import List, Dict, Any, Optional, Tuple
 
 import chromadb
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
-class HinglishSearchEngine:
+class SynapseChatEngine:
+    """
+    Synapse_Chat Semantic Search & Retrieval Engine.
+    Combines Multilingual Dense Vector Embeddings, Metadata Intent Routing,
+    Context-Windowing, and Cross-Encoder Hybrid Reranking.
+    """
     def __init__(
         self,
         corpus_path: str = "chat_corpus.json",
         db_dir: str = "./chroma_db",
-        model_name: str = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
-        collection_name: str = "whatsapp_chat_collection"
+        model_name: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2",
+        reranker_name: str = "cross-encoder/ms-marco-MiniLM-L-6-v2",
+        collection_name: str = "synapse_chat_collection"
     ):
         self.corpus_path = corpus_path
         self.db_dir = db_dir
         self.model_name = model_name
+        self.reranker_name = reranker_name
         self.collection_name = collection_name
         
         self.corpus: List[Dict[str, Any]] = []
         self.corpus_by_id: Dict[int, Dict[str, Any]] = {}
         self.load_corpus()
 
-        print(f"Loading embedding model: {self.model_name}...")
+        # Initialize Primary Multilingual Embedding Model
+        print(f"🧠 [Synapse_Chat] Loading Embedding Model: {self.model_name}...")
         try:
             self.model = SentenceTransformer(self.model_name, local_files_only=True)
         except Exception:
-            try:
-                self.model = SentenceTransformer(self.model_name)
-            except Exception as e:
-                os.environ["HF_HUB_OFFLINE"] = "1"
-                self.model = SentenceTransformer(self.model_name, local_files_only=True)
+            os.environ["HF_HUB_OFFLINE"] = "1"
+            self.model = SentenceTransformer("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2", local_files_only=True)
+
+        # Initialize Cross-Encoder Reranker
+        print(f"⚡ [Synapse_Chat] Loading Reranker Engine...")
+        try:
+            self.reranker = CrossEncoder(self.reranker_name, local_files_only=True, max_length=512)
+        except Exception:
+            self.reranker = None
             
         self.chroma_client = chromadb.PersistentClient(path=self.db_dir)
         self.collection = self.chroma_client.get_or_create_collection(
@@ -46,21 +58,20 @@ class HinglishSearchEngine:
             with open(self.corpus_path, "r", encoding="utf-8") as f:
                 self.corpus = json.load(f)
             self.corpus_by_id = {msg["message_id"]: msg for msg in self.corpus}
-            print(f"Loaded {len(self.corpus)} messages from {self.corpus_path}")
+            print(f"💬 [Synapse_Chat] Loaded {len(self.corpus)} messages from {self.corpus_path}")
         else:
-            print(f"Warning: Corpus file {self.corpus_path} not found.")
+            print(f"⚠️ Corpus file {self.corpus_path} not found.")
 
     def index_corpus(self, force_reindex: bool = False, batch_size: int = 256):
         """
         Indexes corpus messages into ChromaDB vector database using Context-Aware Embeddings.
-        Each message embedding incorporates surrounding conversational context (previous & next messages).
         """
         existing_count = self.collection.count()
         if existing_count >= len(self.corpus) and not force_reindex:
-            print(f"Vector DB already indexed with {existing_count} items. Skipping indexing.")
+            print(f"✅ [Synapse_Chat] Vector DB already indexed with {existing_count} items. Ready for search!")
             return
 
-        print("Building Context-Aware Vector Index in ChromaDB...")
+        print("🚀 [Synapse_Chat] Building High-Precision Context-Aware Vector Index...")
         try:
             self.chroma_client.delete_collection(self.collection_name)
         except Exception:
@@ -82,11 +93,9 @@ class HinglishSearchEngine:
             for idx_in_batch, msg in enumerate(batch):
                 global_idx = i + idx_in_batch
                 
-                # Context window construction (1 prev, 1 next for embedding context)
-                prev_text = f" Context: {self.corpus[global_idx-1]['sender']}: {self.corpus[global_idx-1]['text']}" if global_idx > 0 else ""
-                next_text = f" Context: {self.corpus[global_idx+1]['sender']}: {self.corpus[global_idx+1]['text']}" if global_idx < total_msgs - 1 else ""
+                prev_text = f" Prev: {self.corpus[global_idx-1]['sender']}: {self.corpus[global_idx-1]['text']}" if global_idx > 0 else ""
+                next_text = f" Next: {self.corpus[global_idx+1]['sender']}: {self.corpus[global_idx+1]['text']}" if global_idx < total_msgs - 1 else ""
                 
-                # Context-aware document representation
                 doc_text = f"{msg['sender']}: {msg['text']}{prev_text}{next_text}"
                 documents.append(doc_text)
                 
@@ -110,13 +119,13 @@ class HinglishSearchEngine:
                 metadatas=metadatas,
                 ids=ids
             )
-            print(f"Indexed batch {i} to {i + len(batch)} / {total_msgs}")
+            print(f"📦 Indexed batch {i} to {i + len(batch)} / {total_msgs}")
             
-        print("✅ Context-Aware Vector Indexing complete!")
+        print("🎉 [Synapse_Chat] Context-Aware Vector Indexing complete!")
 
     def parse_query_intent(self, query: str) -> Dict[str, Any]:
         """
-        Parses free-form query into metadata filters and clean semantic query text.
+        Parses query into metadata filters (Sender, Month, Year) and clean semantic query text.
         """
         query_lower = query.lower().strip()
         sender_filter = None
@@ -133,6 +142,7 @@ class HinglishSearchEngine:
             if any(re.search(p, query_lower) for p in patterns):
                 sender_filter = s.capitalize()
                 break
+        
 
         months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"]
         for m in months:
@@ -165,7 +175,7 @@ class HinglishSearchEngine:
         }
 
     def _compute_keyword_boost(self, query: str, text: str) -> float:
-        """Computes lexical token overlap score between query and message text."""
+        """Computes lexical token overlap score between query and text."""
         query_words = set(re.findall(r'\b\w{3,}\b', query.lower()))
         if not query_words:
             return 0.0
@@ -185,7 +195,7 @@ class HinglishSearchEngine:
         manual_month: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        Executes context-aware semantic search with metadata filters & hybrid reranking.
+        Executes hybrid semantic vector search with Cross-Encoder reranking and intent filtering.
         """
         intent = self.parse_query_intent(query)
         
@@ -219,7 +229,7 @@ class HinglishSearchEngine:
                 where=where_clause
             )
         except Exception as e:
-            print(f"Filtered search warning ({e}), falling back to unfiltered...")
+            print(f"⚠️ Filtered query note ({e}), searching unfiltered...")
             results = self.collection.query(
                 query_embeddings=query_embedding,
                 n_results=candidate_k
@@ -227,6 +237,9 @@ class HinglishSearchEngine:
 
         candidates = []
         if results and "ids" in results and results["ids"] and len(results["ids"][0]) > 0:
+            doc_pairs = []
+            raw_candidates = []
+            
             for idx in range(len(results["ids"][0])):
                 msg_id = int(results["ids"][0][idx])
                 dist = results["distances"][0][idx] if "distances" in results and results["distances"] else 0.0
@@ -234,14 +247,42 @@ class HinglishSearchEngine:
                 
                 raw_msg = self.corpus_by_id.get(msg_id, {})
                 msg_text = raw_msg.get("text", "")
+                doc_full = results["documents"][0][idx]
                 
-                kw_score = self._compute_keyword_boost(query_text, msg_text)
-                hybrid_score = round(0.85 * vec_sim + 0.15 * kw_score, 4)
-                
-                candidates.append({
+                doc_pairs.append((query_text, doc_full))
+                raw_candidates.append({
                     "message_id": msg_id,
                     "sender": raw_msg.get("sender"),
                     "timestamp": raw_msg.get("timestamp"),
+                    "text": msg_text,
+                    "vec_sim": vec_sim
+                })
+
+            # Cross-Encoder Reranking
+            cross_scores = None
+            if self.reranker and doc_pairs:
+                try:
+                    cross_scores = self.reranker.predict(doc_pairs)
+                except Exception:
+                    cross_scores = None
+
+            for i, cand in enumerate(raw_candidates):
+                vec_sim = cand["vec_sim"]
+                msg_text = cand["text"]
+                kw_score = self._compute_keyword_boost(query_text, msg_text)
+                
+                if cross_scores is not None and len(cross_scores) > i:
+                    ce_score = float(cross_scores[i])
+                    # Sigmoid scale cross score to 0..1 range
+                    norm_ce = 1.0 / (1.0 + pow(2.71828, -ce_score))
+                    hybrid_score = round(0.5 * vec_sim + 0.35 * norm_ce + 0.15 * kw_score, 4)
+                else:
+                    hybrid_score = round(0.85 * vec_sim + 0.15 * kw_score, 4)
+
+                candidates.append({
+                    "message_id": cand["message_id"],
+                    "sender": cand["sender"],
+                    "timestamp": cand["timestamp"],
                     "text": msg_text,
                     "similarity_score": hybrid_score,
                     "vector_similarity": round(vec_sim, 4),
@@ -271,8 +312,11 @@ class HinglishSearchEngine:
             
         return context_msgs
 
+# Alias for Synapse_Chat engine
+HinglishSearchEngine = SynapseChatEngine
+
 if __name__ == "__main__":
-    engine = HinglishSearchEngine()
-    engine.index_corpus(force_reindex=True)
+    engine = SynapseChatEngine()
+    engine.index_corpus()
     res = engine.search("AirPods Pro gift for Priya", top_k=3)
-    print("Sample Search Result:", res)
+    print("Synapse_Chat Result:", res)
