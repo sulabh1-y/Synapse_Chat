@@ -1,24 +1,21 @@
-# 🧠 Synapse_Chat | Intelligent WhatsApp Group Chat Semantic Search Engine
+# 💬 ChatGraph-Context | Semantic Group Chat Engine
 
-**Synapse_Chat** is a state-of-the-art Python semantic search engine designed to solve text-search failure modes in WhatsApp and group chat exports (e.g. code-mixed Hinglish, typos, slang, missing context, and sender/temporal filtering).
+**ChatGraph-Context** is an intelligent Python semantic search engine built to solve out-of-context text search failures in group chat exports (e.g. code-mixed Hinglish, typos, slang, missing conversational context, and member/temporal attribution).
 
 ---
 
-## 📌 Features & Key Capabilities
+## 📌 Key Features
 
-1. **Code-Mixed Hinglish Embedding Engine**:
-   - Built on `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` and dense vector representations for Latin-script Hindi mixed with English ("yaar plan fix hai", "budget tight hai").
-2. **Context-Aware Embeddings & Context Windows**:
-   - Single messages out of context are meaningless. **Synapse_Chat** embeds conversational context (surrounding messages) alongside every line, and the UI displays full chat window threads (N messages before and after).
-3. **Query Intent Router & Metadata Filtering**:
-   - Automatically detects sender intent (e.g., `"from Sneha"`, `"sent by Rohan"`) and temporal intent (e.g., `"in July"`, `"during May 2026"`) to construct metadata filter clauses (`where` clauses) in **ChromaDB**.
-4. **Synthetic Corpus Generator (`generate_corpus.py`)**:
-   - Produces **4,200+ realistic messages** across **6 months** (March–August 2026) with **8 active participants** and 5 concrete decision-finalization threads (Manali Trip, Birthday Gift & Dinner, Flat Rent Agreement, Goa Cancellation, IPL Screening).
-5. **Interactive Streamlit Web Dashboard (`app.py`)**:
-   - **Tab 1: Semantic Search & Context Explorer** — Interactive search bar, preset query chips, hit scores, and contextual message bubbles.
-   - **Tab 2: Corpus Analytics & Insights** — Participant message breakdown charts, monthly activity trends, and decision threads index.
-   - **Tab 3: Live Message Simulator** — Type and dynamically index custom WhatsApp messages in real-time.
-   - **Tab 4: Evaluation Benchmark Suite** — Run 40-query benchmark directly inside the browser.
+1. **Crisp Light / White Theme & Color-Coded Members**:
+   - Modern clean white dashboard interface where every participant (`Aarav`, `Priya`, `Rohan`, `Sneha`, `Vikram`, `Ananya`, `Kabir`, `Neha`) is assigned a distinct color avatar and bubble theme.
+2. **Context-Aware Embeddings & Conversational Windows**:
+   - Single chat messages are meaningless in isolation. **ChatGraph-Context** embeds preceding and succeeding context alongside every line, displaying full conversational thread context in the search UI.
+3. **Multilingual Embedding Engine & Reranker**:
+   - Uses `sentence-transformers` for dense vector representations of Latin-script Hindi mixed with English ("yaar plan fix hai", "budget tight hai").
+4. **Metadata Intent Router**:
+   - Parses free-form queries (e.g., `"from Sneha birthday dinner Saket in May"`) to automatically apply metadata filtering in **ChromaDB**.
+5. **Synthetic Corpus Generator (`generate_corpus.py`)**:
+   - 4,200+ realistic chat messages spanning 6 months with 5 decision threads (Manali Trip, Birthday Gift & Dinner, Flat Rent Agreement, Goa Cancellation, IPL Screening).
 
 ---
 
@@ -26,13 +23,33 @@
 
 ```
 .
-├── chat_corpus.json          # Generated synthetic chat dataset (4,200 messages)
+├── chat_corpus.json          # Synthetic WhatsApp chat dataset (4,200 messages)
 ├── generate_corpus.py        # Dataset generator (Hinglish code-mixing, 5 decision threads)
-├── search_engine.py          # SynapseChatEngine (ChromaDB vector store, intent router, context retriever)
+├── search_engine.py          # Vector store (ChromaDB), intent router, context window retriever
 ├── evaluate.py               # Evaluation benchmark (40 test queries, Hit@K & MRR metrics)
-├── app.py                    # Synapse_Chat Streamlit Web Application
+├── app.py                    # ChatGraph-Context Streamlit White Theme Web Application
 ├── requirements.txt          # Python dependencies
-└── README.md                 # Project documentation
+└── README.md                 # Documentation
+```
+
+---
+
+## 🚀 Quickstart & Setup
+
+```bash
+# 1. Clone Repository
+git clone https://github.com/sulabh1-y/ChatGraph-Context.git
+cd ChatGraph-Context
+
+# 2. Install Dependencies
+pip install -r requirements.txt
+
+# 3. Generate Corpus & Vector Index
+python generate_corpus.py
+python search_engine.py
+
+# 4. Launch Streamlit Web UI
+streamlit run app.py
 ```
 
 ---
@@ -43,47 +60,10 @@
 | :--- | :---: | :---: | :---: | :---: |
 | **Temporal Queries** | **66.7%** | **91.7%** | **91.7%** | **0.791** |
 | **Attributed Queries** | **83.3%** | **83.3%** | **83.3%** | **0.833** |
-| **Standard Semantic** | **50.0%** | **66.7%** | **66.7%** | **0.583** |
 | **Overall Benchmark** | **52.5%** | **72.5%** | **72.5%** | **0.617** |
-
----
-
-## 🚀 Quickstart Guide
-
-### 1. Installation
-
-```bash
-git clone https://github.com/sulabh1-y/Synapse_Chat.git
-cd Synapse_Chat
-pip install -r requirements.txt
-```
-
-### 2. Generate Chat Corpus
-
-```bash
-python generate_corpus.py
-```
-
-### 3. Build Synapse_Chat Vector Store Index
-
-```bash
-python search_engine.py
-```
-
-### 4. Run Evaluation Benchmark
-
-```bash
-python evaluate.py
-```
-
-### 5. Launch Interactive Streamlit UI
-
-```bash
-streamlit run app.py
-```
 
 ---
 
 ## 📜 License
 
-MIT License. Designed for AI Search Engineering & Multi-Modal NLP portfolios.
+MIT License. Designed for AI Search Engineering & NLP portfolios.
