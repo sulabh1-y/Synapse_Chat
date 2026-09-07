@@ -67,6 +67,20 @@ class SynapseChatEngine:
         Indexes corpus messages into ChromaDB vector database using Context-Aware Embeddings.
         """
         existing_count = self.collection.count()
+        current_dim = getattr(self.model, "get_sentence_embedding_dimension", lambda: None)()
+        
+        # Verify vector dimension compatibility
+        if existing_count > 0 and current_dim and not force_reindex:
+            try:
+                sample = self.collection.get(limit=1, include=["embeddings"])
+                if sample and sample["embeddings"] and len(sample["embeddings"]) > 0:
+                    existing_dim = len(sample["embeddings"][0])
+                    if existing_dim != current_dim:
+                        print(f"⚠️ Vector DB dimension mismatch ({existing_dim} vs {current_dim}). Auto re-indexing collection...")
+                        force_reindex = True
+            except Exception:
+                pass
+
         if existing_count >= len(self.corpus) and not force_reindex:
             print(f"✅ [Synapse_Chat] Vector DB already indexed with {existing_count} items. Ready for search!")
             return
@@ -229,11 +243,20 @@ class SynapseChatEngine:
                 where=where_clause
             )
         except Exception as e:
-            print(f"⚠️ Filtered query note ({e}), searching unfiltered...")
-            results = self.collection.query(
-                query_embeddings=query_embedding,
-                n_results=candidate_k
-            )
+            if "dimension" in str(e).lower() or "expecting embedding" in str(e).lower():
+                print(f"⚠️ Vector dimension mismatch detected ({e}). Auto re-indexing collection...")
+                self.index_corpus(force_reindex=True)
+                results = self.collection.query(
+                    query_embeddings=query_embedding,
+                    n_results=candidate_k,
+                    where=where_clause
+                )
+            else:
+                print(f"⚠️ Filtered query note ({e}), searching unfiltered...")
+                results = self.collection.query(
+                    query_embeddings=query_embedding,
+                    n_results=candidate_k
+                )
 
         candidates = []
         if results and "ids" in results and results["ids"] and len(results["ids"][0]) > 0:
